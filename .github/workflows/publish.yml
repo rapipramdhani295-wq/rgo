@@ -1,0 +1,26 @@
+name: Publish RGO
+on:
+  push:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unzip project
+        run: unzip -q project.zip -d src
+      - name: Build
+        run: |
+          $ANDROID_NDK_HOME/ndk-build NDK_PROJECT_PATH=src APP_BUILD_SCRIPT=src/jni/Android.mk NDK_APPLICATION_MK=src/jni/Application.mk
+      - name: Put libs into the repo
+        run: |
+          mkdir -p out
+          cp src/libs/armeabi-v7a/libRGO.so out/libRGO.so
+          cp src/libs/arm64-v8a/libRGO64.so out/libRGO64.so
+          git config user.name github-actions
+          git config user.email actions@github.com
+          git add -f out
+          git commit -m "Add built libs" || exit 0
+          git push
